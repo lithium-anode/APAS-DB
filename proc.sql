@@ -160,5 +160,41 @@ modifies sql data begin
         and f.cycle_id = p_cycle_id;
 end//
 
+-- =================================================================
+-- PROCEDURE 4: sp_GetDepartmentPerformanceReport
+-- Returns a summary of all departments for a given cycle.
+-- =================================================================
+CREATE PROCEDURE `sp_GetDepartmentPerformanceReport`(
+    IN p_cycle_id INT
+)
+READS SQL DATA
+BEGIN
+    SELECT
+        d.department_name,
+        COUNT(report.employee_id) AS 'employees_rated',
+        AVG(report.weighted_score) AS 'average_score',
+        MAX(report.weighted_score) AS 'highest_score'
+    FROM
+        `departments` d
+    LEFT JOIN
+        (
+            -- This is your nested query from before
+            SELECT
+                e.employee_id,
+                e.department_id,
+                fr.weighted_score
+            FROM
+                `final_ratings` fr
+            JOIN
+                `employees` e ON fr.employee_id = e.employee_id
+            WHERE
+                fr.cycle_id = p_cycle_id -- Use the parameter
+        ) AS report ON d.department_id = report.department_id
+    GROUP BY
+        d.department_name
+    ORDER BY
+        average_score DESC;
+END//
+
 delimiter ;
 
